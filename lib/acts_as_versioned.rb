@@ -153,12 +153,25 @@ module ActiveRecord #:nodoc:
       #
       #   [self.primary_key, inheritance_column, 'version', 'lock_version', versioned_inheritance_column]
       #
-      # You can add or change those by modifying #non_versioned_columns.  Note that this takes strings and not symbols.
+      # You can add or change those by passing non_versioned_columns.  Note that this takes strings and not symbols.
       #
       #   class Post < ActiveRecord::Base
-      #     acts_as_versioned
-      #     self.non_versioned_columns << 'comments_count'
+      #     acts_as_versioned non_versioned_columns: 'comments_count'
       #   end
+      #
+      #
+      # == Ignoring Fields That Trigger Creation of a Version 
+      #
+      # By default, acts_as_versioned will carete a new version when any field (excluding those specified in non_versioned_columns) changes.
+      #
+      # You can specify fields that don't have to trigger the creation of a new version by passing ignore.
+      #
+      #   class Post < ActiveRecord::Base
+      #     acts_as_versioned ignore: 'archived'
+      #   end
+      #
+      # When specified, ignore takes over non_versioned_columns so only fields specified as ignore are considered.
+      #
       #
       def acts_as_versioned(options = {}, &extension)
         # don't allow multiple calls
@@ -166,7 +179,7 @@ module ActiveRecord #:nodoc:
 
         cattr_accessor :versioned_class_name, :versioned_foreign_key, :versioned_table_name, :versioned_inheritance_column,
                        :version_column, :max_version_limit, :track_altered_attributes, :version_condition, :version_sequence_name, :non_versioned_columns,
-                       :version_association_options, :version_if_changed
+                       :version_association_options, :version_if_changed, :ignored_params
 
         self.versioned_class_name         = options[:class_name] || "Version"
         self.versioned_foreign_key        = options[:foreign_key] || self.to_s.foreign_key
@@ -176,6 +189,7 @@ module ActiveRecord #:nodoc:
         self.version_sequence_name        = options[:sequence_name]
         self.max_version_limit            = options[:limit].to_i
         self.version_condition            = options[:if] || true
+        self.ignored_params               = options[:ignore] || options[:non_versioned_columns]
         self.non_versioned_columns        = [self.primary_key, inheritance_column, self.version_column, 'lock_version', versioned_inheritance_column] + options[:non_versioned_columns].to_a.map(&:to_s)
         self.version_association_options  = {
                                                     :class_name  => "#{self.to_s}::#{versioned_class_name}",
@@ -326,6 +340,14 @@ module ActiveRecord #:nodoc:
 
         def altered?
           track_altered_attributes ? (version_if_changed - changed).length < version_if_changed.length : changed?
+        end
+
+        def changed?
+          ignored_params.each do |param|
+             changed_attributes.except!(param).present?
+          end
+
+          changed_attributes.except.present?
         end
 
         # Clones a model.  Used when saving a new version or reverting a model's version.
