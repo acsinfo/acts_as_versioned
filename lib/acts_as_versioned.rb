@@ -343,11 +343,7 @@ module ActiveRecord #:nodoc:
         end
 
         def changed?
-          ignored_params.each do |param|
-             changed_attributes.except!(param).present?
-          end
-
-          changed_attributes.except.present?
+          changed_attributes.except!(*ignored_params).present?
         end
 
         # Clones a model.  Used when saving a new version or reverting a model's version.
