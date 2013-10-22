@@ -339,11 +339,11 @@ module ActiveRecord #:nodoc:
         end
 
         def altered?
-          track_altered_attributes ? (version_if_changed - changed).length < version_if_changed.length : changed?
+          track_altered_attributes ? (version_if_changed - changed).length < version_if_changed.length : changed_versioned_columns?
         end
 
-        def changed?
-          changed_attributes.except!(*ignored_params).present?
+        def changed_versioned_columns?
+          changed_attributes.except(*ignored_params).present?
         end
 
         # Clones a model.  Used when saving a new version or reverting a model's version.
