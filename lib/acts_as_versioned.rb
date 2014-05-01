@@ -67,7 +67,7 @@ module ActiveRecord #:nodoc:
     #
     # See ActiveRecord::Acts::Versioned::ClassMethods#acts_as_versioned for configuration options
     module Versioned
-      VERSION   = "0.7.99"
+      VERSION   = "0.6.0.1"
       CALLBACKS = [:set_new_version, :save_version, :save_version?]
 
       # == Configuration options
